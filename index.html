@@ -167,20 +167,21 @@
     const manualCashflows = [];
     let   currentMethod   = 'constant';
 
+    /* ------------- listeners ------------- */
     methodRadios.forEach(radio => {
         radio.addEventListener('change', e => {
             currentMethod = e.target.value;
             const manual  = currentMethod === 'manual';
             constantControls.classList.toggle('hidden', manual);
             resetBtn.classList.toggle('hidden', !manual);
-            updateTable();          // enregistre historique (par défaut)
+            updateTable(false);          // change de mode SANS toucher à l'historique
         });
     });
 
     calcBtn.addEventListener('click', () => {
         dcfValue.textContent = 'Calculating...';
         setTimeout(() => {
-            updateTable();          // enregistre historique (par défaut)
+            updateTable();               // enregistre historique
             dcfBox.classList.add('flash');
             setTimeout(()=>dcfBox.classList.remove('flash'),300);
         },150);
@@ -188,9 +189,10 @@
 
     resetBtn.addEventListener('click', () => {
         manualCashflows.length = 0;
-        updateTable();              // enregistre historique (par défaut)
+        updateTable();                   // enregistre historique
     });
 
+    /* ------------- helpers ------------- */
     function addHistory(val){
         if(val === lastDCF) return;
         lastDCF = val;
@@ -201,7 +203,7 @@
             .join('');
     }
 
-    /* ---- updateTable avec paramètre ---- */
+    /* ------------- core ------------- */
     function updateTable(shouldRecordHistory = true) {
         const numYears        = parseInt(years.value);
         const discountRate    = parseFloat(discount.value) / 100;
@@ -240,10 +242,7 @@
 
         dcfValue.textContent = `$${totalDCF.toFixed(2)}`;
 
-        /* enregistre ou non l’historique */
-        if (shouldRecordHistory) {
-            addHistory(totalDCF.toFixed(2));
-        }
+        if (shouldRecordHistory) addHistory(totalDCF.toFixed(2));
 
         if (currentMethod === 'manual') {
             document.querySelectorAll('.cashflow-input').forEach(input =>
@@ -267,7 +266,7 @@
         });
     }
 
-    /* appel initial SANS enregistrement historique */
+    /* appel initial SANS historisation */
     updateTable(false);
 </script>
 </body>
