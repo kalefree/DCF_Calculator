@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCF Calculator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; margin-bottom: 20px; color: #333; }
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .control-group { display: flex; flex-direction: column; }
+        label { font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        input:focus, select:focus { outline: none; border-color: #007bff; }
+        .option-toggle { display: flex; gap: 10px; margin-bottom: 10px; }
+        .option-toggle input[type="radio"] { margin-right: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 10px; text-align: center; border: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: bold; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .cashflow-input { width: 100px; padding: 5px; border: 1px solid #ddd; border-radius: 3px; }
+        .dcf-result { text-align: center; margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #007bff, #0056b3); color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,123,255,0.3); }
+        .dcf-result h2 { margin-bottom: 10px; }
+        .dcf-value { font-size: 2em; font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DCF Calculator</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="years">Projection Years:</label>
+                <select id="years">
+                    <option value="5">5 Years</option>
+                    <option value="10" selected>10 Years</option>
+                    <option value="15">15 Years</option>
+                    <option value="20">20 Years</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="discount">Discount Rate (%):</label>
+                <input type="number" id="discount" value="5" step="0.1" min="0" max="50">
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>Cashflow Method:</label>
+            <div class="option-toggle">
+                <label><input type="radio" name="method" value="constant" checked> Constant + Growth</label>
+                <label><input type="radio" name="method" value="manual"> Manual Input</label>
+            </div>
+        </div>
+        
+        <div id="constant-controls" class="controls">
+            <div class="control-group">
+                <label for="initial">Initial Cashflow:</label>
+                <input type="number" id="initial" value="1000" step="1">
+            </div>
+            <div class="control-group">
+                <label for="growth">Growth Rate (%):</label>
+                <input type="number" id="growth" value="0" step="0.1">
+            </div>
+        </div>
+        
+        <table id="dcf-table">
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Cashflow</th>
+                    <th>Discount Factor</th>
+                    <th>Present Value</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+        
+        <div class="dcf-result">
+            <h2>Total DCF Value</h2>
+            <div class="dcf-value" id="dcf-value">$0.00</div>
+        </div>
+    </div>
+
+    <script>
+        const years = document.getElementById('years');
+        const discount = document.getElementById('discount');
+        const initial = document.getElementById('initial');
+        const growth = document.getElementById('growth');
+        const constantControls = document.getElementById('constant-controls');
+        const tableBody = document.getElementById('table-body');
+        const dcfValue = document.getElementById('dcf-value');
+        const methodRadios = document.querySelectorAll('input[name="method"]');
+        
+        let currentMethod = 'constant';
+        
+        methodRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentMethod = e.target.value;
+                constantControls.classList.toggle('hidden', currentMethod === 'manual');
+                updateTable();
+            });
+        });
+        
+        [years, discount, initial, growth].forEach(input => {
+            input.addEventListener('input', updateTable);
+        });
+        
+        function updateTable() {
+            const numYears = parseInt(years.value);
+            const discountRate = parseFloat(discount.value) / 100;
+            const initialCashflow = parseFloat(initial.value) || 0;
+            const growthRate = parseFloat(growth.value) / 100;
+            
+            tableBody.innerHTML = '';
+            let totalDCF = 0;
+            
+            for (let year = 1; year <= numYears; year++) {
+                const row = document.createElement('tr');
+                const discountFactor = 1 / Math.pow(1 + discountRate, year);
+                
+                let cashflow;
+                if (currentMethod === 'constant') {
+                    cashflow = initialCashflow * Math.pow(1 + growthRate, year - 1);
+                } else {
+                    cashflow = 0; // Will be set by input
+                }
+                
+                const presentValue = cashflow * discountFactor;
+                totalDCF += presentValue;
+                
+                row.innerHTML = `
+                    <td>${year}</td>
+                    <td>${currentMethod === 'manual' ? 
+                        `<input type="number" class="cashflow-input" value="${cashflow}" data-year="${year}">` : 
+                        `$${cashflow.toFixed(2)}`}</td>
+                    <td>${discountFactor.toFixed(4)}</td>
+                    <td>$${presentValue.toFixed(2)}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            }
+            
+            dcfValue.textContent = `$${totalDCF.toFixed(2)}`;
+            
+            // Add event listeners to manual inputs
+            if (currentMethod === 'manual') {
+                document.querySelectorAll('.cashflow-input').forEach(input => {
+                    input.addEventListener('input', updateManualDCF);
+                });
+            }
+        }
+        
+        function updateManualDCF() {
+            const discountRate = parseFloat(discount.value) / 100;
+            let totalDCF = 0;
+            
+            document.querySelectorAll('.cashflow-input').forEach(input => {
+                const year = parseInt(input.dataset.year);
+                const cashflow = parseFloat(input.value) || 0;
+                const discountFactor = 1 / Math.pow(1 + discountRate, year);
+                const presentValue = cashflow * discountFactor;
+                totalDCF += presentValue;
+                
+                // Update the present value cell
+                const row = input.closest('tr');
+                row.cells[3].textContent = `$${presentValue.toFixed(2)}`;
+            });
+            
+            dcfValue.textContent = `$${totalDCF.toFixed(2)}`;
+        }
+        
+        // Initialize table
+        updateTable();
+    </script>
+</body>
+</html>
