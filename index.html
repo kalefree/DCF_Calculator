@@ -25,6 +25,9 @@
         .dcf-result h2 { margin-bottom: 10px; }
         .dcf-value { font-size: 2em; font-weight: bold; }
         .hidden { display: none; }
+        #reset-btn { margin:10px 0; padding:6px 12px; font-size:12px; }
+        .history {text-align:center;margin-top:10px;color:#333;}
+        .history div {opacity:0.7;font-size:0.9em;}
     </style>
 </head>
 <body>
@@ -66,6 +69,8 @@
                 <input type="number" id="growth" value="0" step="0.1">
             </div>
         </div>
+
+        <button id="reset-btn" class="hidden">Reset</button>
         
         <table id="dcf-table">
             <thead>
@@ -84,6 +89,7 @@
             <h2>Total DCF Value</h2>
             <div class="dcf-value" id="dcf-value">$0.00</div>
         </div>
+        <div id="history" class="history"></div>
     </div>
 
     <script>
@@ -95,13 +101,21 @@
         const tableBody = document.getElementById('table-body');
         const dcfValue = document.getElementById('dcf-value');
         const methodRadios = document.querySelectorAll('input[name="method"]');
+        const resetBtn = document.getElementById('reset-btn');
+
+        const historyDiv = document.getElementById("history");
+        const history = [];
+        let lastDCF = "";
+        const manualCashflows = [];
         
         let currentMethod = 'constant';
         
         methodRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
+            radio.addEventListener('change', e => {
                 currentMethod = e.target.value;
-                constantControls.classList.toggle('hidden', currentMethod === 'manual');
+                const manual = currentMethod === 'manual';
+                constantControls.classList.toggle('hidden', manual);
+                resetBtn.classList.toggle('hidden', !manual);
                 updateTable();
             });
         });
@@ -109,25 +123,36 @@
         [years, discount, initial, growth].forEach(input => {
             input.addEventListener('input', updateTable);
         });
+        resetBtn.addEventListener('click', () => {
+            manualCashflows.length = 0;
+            updateTable();
+        });
+        function addHistory(val){
+            if(val===lastDCF)return;
+            lastDCF=val;
+            history.push(val);
+            if(history.length>5)history.shift();
+            historyDiv.innerHTML=history.map((v,i)=>`<div style="opacity:${1-(history.length-1-i)*0.15}">$${v}</div>`).join("");
+        }
         
         function updateTable() {
             const numYears = parseInt(years.value);
             const discountRate = parseFloat(discount.value) / 100;
             const initialCashflow = parseFloat(initial.value) || 0;
             const growthRate = parseFloat(growth.value) / 100;
-            
+
             tableBody.innerHTML = '';
             let totalDCF = 0;
-            
+
             for (let year = 1; year <= numYears; year++) {
                 const row = document.createElement('tr');
                 const discountFactor = 1 / Math.pow(1 + discountRate, year);
-                
+
                 let cashflow;
                 if (currentMethod === 'constant') {
                     cashflow = initialCashflow * Math.pow(1 + growthRate, year - 1);
                 } else {
-                    cashflow = 0; // Will be set by input
+                    cashflow = manualCashflows[year] || 0;
                 }
                 
                 const presentValue = cashflow * discountFactor;
@@ -135,8 +160,8 @@
                 
                 row.innerHTML = `
                     <td>${year}</td>
-                    <td>${currentMethod === 'manual' ? 
-                        `<input type="number" class="cashflow-input" value="${cashflow}" data-year="${year}">` : 
+                    <td>${currentMethod === 'manual' ?
+                        `<input type="number" class="cashflow-input" value="${cashflow}" data-year="${year}">` :
                         `$${cashflow.toFixed(2)}`}</td>
                     <td>${discountFactor.toFixed(4)}</td>
                     <td>$${presentValue.toFixed(2)}</td>
@@ -147,6 +172,7 @@
             
             dcfValue.textContent = `$${totalDCF.toFixed(2)}`;
             
+            addHistory(totalDCF.toFixed(2));
             // Add event listeners to manual inputs
             if (currentMethod === 'manual') {
                 document.querySelectorAll('.cashflow-input').forEach(input => {
@@ -158,10 +184,11 @@
         function updateManualDCF() {
             const discountRate = parseFloat(discount.value) / 100;
             let totalDCF = 0;
-            
+
             document.querySelectorAll('.cashflow-input').forEach(input => {
                 const year = parseInt(input.dataset.year);
                 const cashflow = parseFloat(input.value) || 0;
+                manualCashflows[year] = cashflow;
                 const discountFactor = 1 / Math.pow(1 + discountRate, year);
                 const presentValue = cashflow * discountFactor;
                 totalDCF += presentValue;
@@ -172,6 +199,7 @@
             });
             
             dcfValue.textContent = `$${totalDCF.toFixed(2)}`;
+            addHistory(totalDCF.toFixed(2));
         }
         
         // Initialize table
