@@ -5,26 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DCF Calculator</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; margin-bottom: 20px; color: #333; }
-        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .control-group { display: flex; flex-direction: column; }
-        label { font-weight: bold; margin-bottom: 5px; color: #555; }
-        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-        input:focus, select:focus { outline: none; border-color: #007bff; }
-        .option-toggle { display: flex; gap: 10px; margin-bottom: 10px; }
-        .option-toggle input[type="radio"] { margin-right: 5px; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { padding: 10px; text-align: center; border: 1px solid #ddd; }
-        th { background: #f8f9fa; font-weight: bold; }
-        tr:nth-child(even) { background: #f9f9f9; }
-        .cashflow-input { width: 100px; padding: 5px; border: 1px solid #ddd; border-radius: 3px; }
-        .dcf-result { text-align: center; margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #007bff, #0056b3); color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,123,255,0.3); }
-        .dcf-result h2 { margin-bottom: 10px; }
-        .dcf-value { font-size: 2em; font-weight: bold; }
-        .hidden { display: none; }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Arial,Helvetica,sans-serif;padding:20px;background:#f0f1f5;color:#333}
+        .container{max-width:800px;margin:auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+        h1{text-align:center;margin-bottom:20px;font-weight:600}
+        .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-bottom:15px}
+        .control-group{display:flex;flex-direction:column;position:relative}
+        label{font-weight:600;margin-bottom:5px}
+        input,select{padding:8px 8px 8px 28px;border:1px solid #ccc;border-radius:6px;font-size:14px;background:#fff}
+        input:focus,select:focus{outline:none;border-color:#007bff;box-shadow:0 0 3px rgba(0,123,255,0.5)}
+        .icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:#888}
+        .toggle{display:flex;position:relative;background:#e0e0e0;border-radius:20px;overflow:hidden;margin-bottom:10px}
+        .toggle input{display:none}
+        .toggle label{flex:1;padding:6px 0;text-align:center;cursor:pointer;font-size:13px;font-weight:600;transition:color .3s}
+        .toggle-slider{position:absolute;top:2px;left:2px;bottom:2px;width:50%;background:#007bff;border-radius:16px;transition:transform .3s}
+        .toggle input:checked+label{color:#fff}
+        #manual:checked~.toggle-slider{transform:translateX(100%)}
+        table{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px}
+        th,td{padding:10px;border:1px solid #ddd;text-align:center}
+        th{background:#fafafa;font-weight:600}
+        tr{transition:background .3s ease}
+        tr:nth-child(even){background:#f9f9f9}
+        tr:hover{background:#f1f7ff}
+        .cashflow-input{width:90px;padding:5px;border:1px solid #ccc;border-radius:4px}
+        .dcf-result{margin-top:20px;padding:20px;text-align:center;background:#007bff;color:#fff;border-radius:8px;box-shadow:0 4px 15px rgba(0,123,255,0.3);transition:transform .3s}
+        .dcf-value{font-size:2em;font-weight:700}
+        .hidden{display:none}
+        #reset-btn,#calc-btn{margin:10px 5px;padding:8px 16px;font-size:14px;border:none;border-radius:6px;background:#007bff;color:#fff;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,0.2);transition:transform .1s}
+        #reset-btn:active,#calc-btn:active{transform:scale(0.95)}
+        .history{text-align:center;margin-top:10px;color:#333}
+        .history div{opacity:.7;font-size:.9em}
+        .fade-in{animation:fade .4s}
+        @keyframes fade{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+        .flash{animation:flash .3s}
+        @keyframes flash{from{transform:scale(1.05)}to{transform:scale(1)}}
     </style>
 </head>
 <body>
@@ -34,6 +48,7 @@
         <div class="controls">
             <div class="control-group">
                 <label for="years">Projection Years:</label>
+                <span class="icon">📅</span>
                 <select id="years">
                     <option value="5">5 Years</option>
                     <option value="10" selected>10 Years</option>
@@ -41,31 +56,40 @@
                     <option value="20">20 Years</option>
                 </select>
             </div>
-            
+
             <div class="control-group">
                 <label for="discount">Discount Rate (%):</label>
+                <span class="icon">%</span>
                 <input type="number" id="discount" value="5" step="0.1" min="0" max="50">
             </div>
         </div>
-        
+
         <div class="control-group">
             <label>Cashflow Method:</label>
-            <div class="option-toggle">
-                <label><input type="radio" name="method" value="constant" checked> Constant + Growth</label>
-                <label><input type="radio" name="method" value="manual"> Manual Input</label>
+            <div class="toggle">
+                <input type="radio" id="constant" name="method" value="constant" checked>
+                <label for="constant">Constant + Growth</label>
+                <input type="radio" id="manual" name="method" value="manual">
+                <label for="manual">Manual Input</label>
+                <span class="toggle-slider"></span>
             </div>
         </div>
         
         <div id="constant-controls" class="controls">
             <div class="control-group">
                 <label for="initial">Initial Cashflow:</label>
+                <span class="icon">💵</span>
                 <input type="number" id="initial" value="1000" step="1">
             </div>
             <div class="control-group">
                 <label for="growth">Growth Rate (%):</label>
+                <span class="icon">%</span>
                 <input type="number" id="growth" value="0" step="0.1">
             </div>
         </div>
+
+        <button id="reset-btn" class="hidden">Reset</button>
+        <button id="calc-btn">Calculate</button>
         
         <table id="dcf-table">
             <thead>
@@ -84,6 +108,7 @@
             <h2>Total DCF Value</h2>
             <div class="dcf-value" id="dcf-value">$0.00</div>
         </div>
+        <div id="history" class="history"></div>
     </div>
 
     <script>
@@ -94,40 +119,67 @@
         const constantControls = document.getElementById('constant-controls');
         const tableBody = document.getElementById('table-body');
         const dcfValue = document.getElementById('dcf-value');
+        const dcfBox = document.querySelector('.dcf-result');
         const methodRadios = document.querySelectorAll('input[name="method"]');
+        const resetBtn = document.getElementById('reset-btn');
+        const calcBtn = document.getElementById('calc-btn');
+
+        const historyDiv = document.getElementById("history");
+        const history = [];
+        let lastDCF = "";
+        const manualCashflows = [];
         
         let currentMethod = 'constant';
         
         methodRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
+            radio.addEventListener('change', e => {
                 currentMethod = e.target.value;
-                constantControls.classList.toggle('hidden', currentMethod === 'manual');
+                const manual = currentMethod === 'manual';
+                constantControls.classList.toggle('hidden', manual);
+                resetBtn.classList.toggle('hidden', !manual);
                 updateTable();
             });
         });
         
-        [years, discount, initial, growth].forEach(input => {
-            input.addEventListener('input', updateTable);
+        calcBtn.addEventListener('click', () => {
+            dcfValue.textContent = 'Calculating...';
+            setTimeout(() => {
+                updateTable();
+                dcfBox.classList.add('flash');
+                setTimeout(()=>dcfBox.classList.remove('flash'),300);
+            },150);
         });
+        resetBtn.addEventListener('click', () => {
+            manualCashflows.length = 0;
+            updateTable();
+        });
+        function addHistory(val){
+            if(val===lastDCF)return;
+            lastDCF=val;
+            history.push(val);
+            if(history.length>5)history.shift();
+            historyDiv.innerHTML=history.map((v,i)=>`<div style="opacity:${1-(history.length-1-i)*0.15}">$${v}</div>`).join("");
+        }
         
         function updateTable() {
             const numYears = parseInt(years.value);
             const discountRate = parseFloat(discount.value) / 100;
             const initialCashflow = parseFloat(initial.value) || 0;
             const growthRate = parseFloat(growth.value) / 100;
-            
+
             tableBody.innerHTML = '';
             let totalDCF = 0;
-            
+
             for (let year = 1; year <= numYears; year++) {
                 const row = document.createElement('tr');
+                row.classList.add('fade-in');
                 const discountFactor = 1 / Math.pow(1 + discountRate, year);
-                
+
                 let cashflow;
                 if (currentMethod === 'constant') {
                     cashflow = initialCashflow * Math.pow(1 + growthRate, year - 1);
                 } else {
-                    cashflow = 0; // Will be set by input
+                    cashflow = manualCashflows[year] || 0;
                 }
                 
                 const presentValue = cashflow * discountFactor;
@@ -135,8 +187,8 @@
                 
                 row.innerHTML = `
                     <td>${year}</td>
-                    <td>${currentMethod === 'manual' ? 
-                        `<input type="number" class="cashflow-input" value="${cashflow}" data-year="${year}">` : 
+                    <td>${currentMethod === 'manual' ?
+                        `<input type="number" class="cashflow-input" value="${cashflow}" data-year="${year}">` :
                         `$${cashflow.toFixed(2)}`}</td>
                     <td>${discountFactor.toFixed(4)}</td>
                     <td>$${presentValue.toFixed(2)}</td>
@@ -147,31 +199,25 @@
             
             dcfValue.textContent = `$${totalDCF.toFixed(2)}`;
             
-            // Add event listeners to manual inputs
+            addHistory(totalDCF.toFixed(2));
             if (currentMethod === 'manual') {
                 document.querySelectorAll('.cashflow-input').forEach(input => {
                     input.addEventListener('input', updateManualDCF);
                 });
             }
         }
-        
+
         function updateManualDCF() {
             const discountRate = parseFloat(discount.value) / 100;
-            let totalDCF = 0;
-            
             document.querySelectorAll('.cashflow-input').forEach(input => {
                 const year = parseInt(input.dataset.year);
                 const cashflow = parseFloat(input.value) || 0;
+                manualCashflows[year] = cashflow;
                 const discountFactor = 1 / Math.pow(1 + discountRate, year);
                 const presentValue = cashflow * discountFactor;
-                totalDCF += presentValue;
-                
-                // Update the present value cell
                 const row = input.closest('tr');
                 row.cells[3].textContent = `$${presentValue.toFixed(2)}`;
             });
-            
-            dcfValue.textContent = `$${totalDCF.toFixed(2)}`;
         }
         
         // Initialize table
