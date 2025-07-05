@@ -103,8 +103,7 @@
                     <th>Present Value</th>
                 </tr>
             </thead>
-            <tbody id="table-body">
-            </tbody>
+            <tbody id="table-body"></tbody>
         </table>
 
         <button id="calc-btn">Calculate</button>
@@ -128,9 +127,8 @@
         const history = [];
         let lastDCF = "";
         const manualCashflows = [];
-        
         let currentMethod = 'constant';
-        
+
         methodRadios.forEach(radio => {
             radio.addEventListener('change', e => {
                 currentMethod = e.target.value;
@@ -140,7 +138,7 @@
                 updateTable();
             });
         });
-        
+
         calcBtn.addEventListener('click', () => {
             dcfValue.textContent = 'Calculating...';
             setTimeout(() => {
@@ -149,20 +147,22 @@
                 setTimeout(()=>dcfBox.classList.remove('flash'),300);
             },150);
         });
+
         resetBtn.addEventListener('click', () => {
             manualCashflows.length = 0;
             updateTable();
         });
+
         function addHistory(val){
-            if(val===lastDCF)return;
-            lastDCF=val;
+            if(val === lastDCF) return;
+            lastDCF = val;
             history.unshift(val);
-            if(history.length>5)history.pop();
-            historyDiv.innerHTML=history
+            if(history.length > 5) history.pop();
+            historyDiv.innerHTML = history
                 .map((v,i)=>`<div class="fade-in" style="opacity:${1-i*0.15}">$${v}</div>`)
                 .join('');
         }
-        
+
         function updateTable() {
             const numYears = parseInt(years.value);
             const discountRate = parseFloat(discount.value) / 100;
@@ -183,10 +183,10 @@
                 } else {
                     cashflow = manualCashflows[year] || 0;
                 }
-                
+
                 const presentValue = cashflow * discountFactor;
                 totalDCF += presentValue;
-                
+
                 row.innerHTML = `
                     <td>${year}</td>
                     <td>${currentMethod === 'manual' ?
@@ -195,13 +195,12 @@
                     <td>${discountFactor.toFixed(4)}</td>
                     <td>$${presentValue.toFixed(2)}</td>
                 `;
-                
                 tableBody.appendChild(row);
             }
-            
+
             dcfValue.textContent = `$${totalDCF.toFixed(2)}`;
-            
             addHistory(totalDCF.toFixed(2));
+
             if (currentMethod === 'manual') {
                 document.querySelectorAll('.cashflow-input').forEach(input => {
                     input.addEventListener('input', updateManualDCF);
@@ -221,8 +220,7 @@
                 row.cells[3].textContent = `$${presentValue.toFixed(2)}`;
             });
         }
-        
-        // Initialize table
+
         updateTable();
     </script>
 </body>
